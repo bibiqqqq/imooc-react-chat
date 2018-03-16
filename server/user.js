@@ -15,13 +15,32 @@ Router.get('/list', function (req, res) {
     })
 })
 Router.get('/getmsglist', function (req,res) {
-  const user = req.cookies.user
-  Chat.find({}, function (err, doc) {
-    if(!err) {
-      return res.json({code:0, msgs: doc})
+  const user = req.cookies.userid
+  User.find({}, function (e, userdoc) {
+    let users = {}
+    userdoc.forEach(v=>{
+      users[v._id] = {name: v.user, avatar:v.avatar}
+    })
+    Chat.find({'$or':[{from:user},{to:user}]}, function (err, doc) {
+      if(!err) {
+        return res.json({code:0, msgs: doc, users: users})
+      }
+    })
+  })
+  
+})
+
+Router.post('/readmsg', function (req, res) {
+  const userid = req.cookies.userid
+  const {from} = req.body
+  Chat.update({from, to:userid},{'$set':{read:true}},{'multi': true},function (err,doc) {
+    if(!err){
+      return res.json({code:0, num:doc.nModified})
     }
+    return res.json({code:1,msg: '修改失败'})
   })
 })
+
   Router.post('/update',function(req,res){
     const userid = req.cookies.userid
     if (!userid) {
